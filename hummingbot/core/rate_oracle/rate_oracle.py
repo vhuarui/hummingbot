@@ -8,6 +8,7 @@ import aiohttp
 
 import hummingbot.client.settings  # noqa
 from hummingbot.connector.exchange.ascend_ex.ascend_ex_api_order_book_data_source import AscendExAPIOrderBookDataSource
+from hummingbot.connector.utils import combine_to_hb_trading_pair
 from hummingbot.core.network_base import NetworkBase
 from hummingbot.core.network_iterator import NetworkStatus
 from hummingbot.core.rate_oracle.utils import find_rate
@@ -28,6 +29,7 @@ class RateOracleSource(Enum):
     coingecko = 1
     kucoin = 2
     ascend_ex = 3
+    felix = 4
 
 
 class RateOracle(NetworkBase):
@@ -53,6 +55,7 @@ class RateOracle(NetworkBase):
     coingecko_supported_vs_tokens_url = "https://api.coingecko.com/api/v3/simple/supported_vs_currencies"
     kucoin_price_url = "https://api.kucoin.com/api/v1/market/allTickers"
     ascend_ex_price_url = "https://ascendex.com/api/pro/v1/ticker"
+    felix_price_url = "https://trade.felix.com/v1/market/trading-pairs?offset=0&limit=10000"
 
     coingecko_token_categories = [
         "cryptocurrency",
@@ -204,6 +207,8 @@ class RateOracle(NetworkBase):
             return await cls.get_kucoin_prices()
         elif cls.source == RateOracleSource.ascend_ex:
             return await cls.get_ascend_ex_prices()
+        elif cls.source == RateOracleSource.felix:
+            return await cls.get_felix_prices()
         else:
             raise NotImplementedError
 
@@ -301,6 +306,23 @@ class RateOracle(NetworkBase):
                 pair = await AscendExAPIOrderBookDataSource.trading_pair_associated_to_exchange_symbol(record["symbol"])
                 if Decimal(record["ask"][0]) > 0 and Decimal(record["bid"][0]) > 0:
                     results[pair] = (Decimal(str(record["ask"][0])) + Decimal(str(record["bid"][0]))) / Decimal("2")
+        return results
+
+    @classmethod
+    @async_ttl_cache(ttl=30, maxsize=1)
+    async def get_felix_prices(cls) -> Dict[str, Decimal]:
+        """
+        Fetches Felix prices from their trading-pairs endpoint.
+        :return A dictionary of trading pairs and prices
+        """
+        results = {}
+        client = await cls._http_client()
+        async with client.request("GET", cls.felix_price_url) as resp:
+            records = await resp.json(content_type=None)
+            for record in records["data"]["list"]:
+                pair = combine_to_hb_trading_pair(base=record["baseAsset"],
+                                                  quote=record["quoteAsset"])
+                results[pair] = Decimal(str(record["price"]))
         return results
 
     @classmethod
