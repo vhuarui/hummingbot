@@ -1,6 +1,7 @@
 import base64
 import os
 import socket
+import time
 from collections import namedtuple
 from hashlib import md5
 from typing import Callable, Dict, Optional, Tuple
@@ -16,6 +17,7 @@ from hummingbot.core.web_assistant.rest_pre_processors import RESTPreProcessorBa
 from hummingbot.core.web_assistant.web_assistants_factory import WebAssistantsFactory
 
 TradeFillOrderDetails = namedtuple("TradeFillOrderDetails", "market exchange_trade_id symbol")
+start_timestamp = time.time()
 
 
 def zrx_order_to_json(order: Optional[ZeroExOrder]) -> Optional[Dict[str, any]]:
@@ -82,7 +84,7 @@ def get_new_client_order_id(
     quote = symbols[1].upper()
     base_str = f"{base[0]}{base[-1]}"
     quote_str = f"{quote[0]}{quote[-1]}"
-    client_instance_id = md5(f"{socket.gethostname()}{os.getpid()}".encode("utf-8")).hexdigest()
+    client_instance_id = md5(f"{start_timestamp}{socket.gethostname()}{os.getpid()}".encode("utf-8")).hexdigest()
     ts_hex = hex(get_tracking_nonce_low_res())[2:]
     client_order_id = f"{hbot_order_id_prefix}{side}{base_str}{quote_str}{ts_hex}{client_instance_id}"
     if max_id_len is not None:

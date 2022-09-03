@@ -166,7 +166,7 @@ class BitmartExchange(ExchangePyBase):
 
         api_params = {"symbol": await self.exchange_symbol_associated_to_pair(trading_pair),
                       "side": trade_type.name.lower(),
-                      "type": "limit",
+                      "type": "limit" if order_type == OrderType.LIMIT else "limit_maker",
                       "size": f"{amount:f}",
                       "price": f"{price:f}",
                       "clientOrderId": order_id,
@@ -180,8 +180,10 @@ class BitmartExchange(ExchangePyBase):
         return exchange_order_id, self.current_timestamp
 
     async def _place_cancel(self, order_id: str, tracked_order: InFlightOrder):
+        exchange_order_id = await tracked_order.get_exchange_order_id()
         api_params = {
-            "clientOrderId": order_id,
+            "order_id": exchange_order_id,
+            # "clientOrderId": order_id,
         }
         cancel_result = await self._api_post(
             path_url=CONSTANTS.CANCEL_ORDER_PATH_URL,
@@ -230,7 +232,7 @@ class BitmartExchange(ExchangePyBase):
                     price_step = Decimal("1") / Decimal(str(math.pow(10, price_decimals)))
                     result.append(TradingRule(trading_pair=trading_pair,
                                               min_order_size=Decimal(str(rule["base_min_size"])),
-                                              max_order_size=Decimal(str(rule["base_max_size"])),
+                                              # max_order_size=Decimal(str(rule["base_max_size"])),
                                               min_order_value=Decimal(str(rule["min_buy_amount"])),
                                               min_base_amount_increment=Decimal(str(rule["base_min_size"])),
                                               min_price_increment=price_step))
@@ -267,7 +269,11 @@ class BitmartExchange(ExchangePyBase):
     async def _request_order_update(self, order: InFlightOrder) -> Dict[str, Any]:
         return await self._api_get(
             path_url=CONSTANTS.GET_ORDER_DETAIL_PATH_URL,
-            params={"clientOrderId": order.client_order_id},
+            params={
+                "symbol": await self.exchange_symbol_associated_to_pair(order.trading_pair),
+                "order_id": await order.get_exchange_order_id(),
+                # "clientOrderId": order.client_order_id
+            },
             is_auth_required=True)
 
     async def _request_order_fills(self, order: InFlightOrder) -> Dict[str, Any]:
