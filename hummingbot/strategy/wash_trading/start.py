@@ -23,8 +23,6 @@ def start(self):
     try:
         order_amount = c_map.get("order_amount").value
         order_refresh_time = c_map.get("order_refresh_time").value
-        order_min_refresh_time = order_refresh_time if c_map.get("order_min_refresh_time").value is None else \
-            c_map.get("order_min_refresh_time").value
         max_order_age = c_map.get("max_order_age").value
         bid_spread = c_map.get("bid_spread").value / Decimal('100')
         ask_spread = c_map.get("ask_spread").value / Decimal('100')
@@ -42,6 +40,8 @@ def start(self):
             c_map.get("inventory_target_base_pct").value / Decimal('100')
         inventory_range_multiplier = c_map.get("inventory_range_multiplier").value
         filled_order_delay = c_map.get("filled_order_delay").value
+        filled_order_delay_min = filled_order_delay if c_map.get("filled_order_delay_min").value is None else \
+            c_map.get("filled_order_delay_min").value
         hanging_orders_enabled = c_map.get("hanging_orders_enabled").value
         hanging_orders_cancel_pct = c_map.get("hanging_orders_cancel_pct").value / Decimal('100')
         order_optimization_enabled = c_map.get("order_optimization_enabled").value
@@ -125,9 +125,9 @@ def start(self):
             inventory_target_base_pct=inventory_target_base_pct,
             inventory_range_multiplier=inventory_range_multiplier,
             filled_order_delay=filled_order_delay,
+            filled_order_delay_min=filled_order_delay_min,
             hanging_orders_enabled=hanging_orders_enabled,
             order_refresh_time=order_refresh_time,
-            order_min_refresh_time=order_min_refresh_time,
             max_order_age=max_order_age,
             order_optimization_enabled=order_optimization_enabled,
             ask_order_optimization_depth=ask_order_optimization_depth,
