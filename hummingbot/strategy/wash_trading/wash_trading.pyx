@@ -58,6 +58,7 @@ cdef class WashTradingStrategy(StrategyBase):
                     order_level_spread: Decimal = s_decimal_zero,
                     order_level_amount: Decimal = s_decimal_zero,
                     order_refresh_time: float = 30.0,
+                    order_min_refresh_time: float = 30.0,
                     max_order_age: float = 1800.0,
                     order_refresh_tolerance_pct: Decimal = s_decimal_neg_one,
                     filled_order_delay: float = 60.0,
@@ -90,6 +91,7 @@ cdef class WashTradingStrategy(StrategyBase):
                     wash_trade_enabled: bool = False,
                     # wash_trade_refresh_time: float = 30.0,
                     wash_trade_spread: Decimal = s_decimal_zero,
+                    wash_trade_min_spread: Decimal = s_decimal_zero,
                     wash_trade_order_min_amount: Decimal = s_decimal_zero,
                     wash_trade_order_max_amount: Decimal = s_decimal_zero
                     ):
@@ -111,6 +113,7 @@ cdef class WashTradingStrategy(StrategyBase):
         self._order_level_spread = order_level_spread
         self._order_level_amount = order_level_amount
         self._order_refresh_time = order_refresh_time
+        self._order_min_refresh_time = order_min_refresh_time
         self._max_order_age = max_order_age
         self._order_refresh_tolerance_pct = order_refresh_tolerance_pct
         self._filled_order_delay = filled_order_delay
@@ -153,6 +156,7 @@ cdef class WashTradingStrategy(StrategyBase):
         self._moving_price_band = moving_price_band
         self._wash_trade_enabled = wash_trade_enabled
         self._wash_trade_spread = wash_trade_spread
+        self._wash_trade_min_spread = wash_trade_min_spread
         self._wash_trade_order_min_amount = wash_trade_order_min_amount
         self._wash_trade_order_max_amount = wash_trade_order_max_amount
         self.c_add_markets([market_info.market])
@@ -319,6 +323,14 @@ cdef class WashTradingStrategy(StrategyBase):
         self._order_refresh_time = value
 
     @property
+    def order_min_refresh_time(self) -> float:
+        return self._order_min_refresh_time
+
+    @order_min_refresh_time.setter
+    def order_min_refresh_time(self, value: float):
+        self._order_min_refresh_time = value
+
+    @property
     def filled_order_delay(self) -> float:
         return self._filled_order_delay
 
@@ -436,6 +448,10 @@ cdef class WashTradingStrategy(StrategyBase):
     @property
     def wash_trade_spread(self) -> Decimal:
         return self._wash_trade_spread
+
+    @property
+    def wash_trade_min_spread(self) -> Decimal:
+        return self._wash_trade_min_spread
 
     @property
     def wash_trade_order_min_amount(self) -> Decimal:
@@ -814,55 +830,55 @@ cdef class WashTradingStrategy(StrategyBase):
             list buys = []
             list sells = []
 
-        buy_reference_price = sell_reference_price = self.get_price()
+        # buy_reference_price = sell_reference_price = self.get_price()
 
-        if self._inventory_cost_price_delegate is not None:
-            inventory_cost_price = self._inventory_cost_price_delegate.get_price()
-            if inventory_cost_price is not None:
-                # Only limit sell price. Buy are always allowed.
-                sell_reference_price = max(inventory_cost_price, sell_reference_price)
-            else:
-                base_balance = float(market.get_balance(self._market_info.base_asset))
-                if base_balance > 0:
-                    raise RuntimeError("Initial inventory price is not set while inventory_cost feature is active.")
+        # if self._inventory_cost_price_delegate is not None:
+        #     inventory_cost_price = self._inventory_cost_price_delegate.get_price()
+        #     if inventory_cost_price is not None:
+        #         # Only limit sell price. Buy are always allowed.
+        #         sell_reference_price = max(inventory_cost_price, sell_reference_price)
+        #     else:
+        #         base_balance = float(market.get_balance(self._market_info.base_asset))
+        #         if base_balance > 0:
+        #             raise RuntimeError("Initial inventory price is not set while inventory_cost feature is active.")
 
         # First to check if a customized order override is configured, otherwise the proposal will be created according
         # to order spread, amount, and levels setting.
-        order_override = self._order_override
-        if order_override is not None and len(order_override) > 0:
-            for key, value in order_override.items():
-                if str(value[0]) in ["buy", "sell"]:
-                    if str(value[0]) == "buy" and not buy_reference_price.is_nan():
-                        price = buy_reference_price * (Decimal("1") - Decimal(str(value[1])) / Decimal("100"))
-                        price = market.c_quantize_order_price(self.trading_pair, price)
-                        size = Decimal(str(value[2]))
-                        size = market.c_quantize_order_amount(self.trading_pair, size)
-                        if size > 0 and price > 0:
-                            buys.append(PriceSize(price, size))
-                    elif str(value[0]) == "sell" and not sell_reference_price.is_nan():
-                        price = sell_reference_price * (Decimal("1") + Decimal(str(value[1])) / Decimal("100"))
-                        price = market.c_quantize_order_price(self.trading_pair, price)
-                        size = Decimal(str(value[2]))
-                        size = market.c_quantize_order_amount(self.trading_pair, size)
-                        if size > 0 and price > 0:
-                            sells.append(PriceSize(price, size))
-        else:
-            if not buy_reference_price.is_nan():
-                for level in range(0, self._buy_levels):
-                    price = buy_reference_price * (Decimal("1") - self._bid_spread - (level * self._order_level_spread))
-                    price = market.c_quantize_order_price(self.trading_pair, price)
-                    size = self._order_amount + (self._order_level_amount * level)
-                    size = market.c_quantize_order_amount(self.trading_pair, size)
-                    if size > 0:
-                        buys.append(PriceSize(price, size))
-            if not sell_reference_price.is_nan():
-                for level in range(0, self._sell_levels):
-                    price = sell_reference_price * (Decimal("1") + self._ask_spread + (level * self._order_level_spread))
-                    price = market.c_quantize_order_price(self.trading_pair, price)
-                    size = self._order_amount + (self._order_level_amount * level)
-                    size = market.c_quantize_order_amount(self.trading_pair, size)
-                    if size > 0:
-                        sells.append(PriceSize(price, size))
+        # order_override = self._order_override
+        # if order_override is not None and len(order_override) > 0:
+        #     for key, value in order_override.items():
+        #         if str(value[0]) in ["buy", "sell"]:
+        #             if str(value[0]) == "buy" and not buy_reference_price.is_nan():
+        #                 price = buy_reference_price * (Decimal("1") - Decimal(str(value[1])) / Decimal("100"))
+        #                 price = market.c_quantize_order_price(self.trading_pair, price)
+        #                 size = Decimal(str(value[2]))
+        #                 size = market.c_quantize_order_amount(self.trading_pair, size)
+        #                 if size > 0 and price > 0:
+        #                     buys.append(PriceSize(price, size))
+        #             elif str(value[0]) == "sell" and not sell_reference_price.is_nan():
+        #                 price = sell_reference_price * (Decimal("1") + Decimal(str(value[1])) / Decimal("100"))
+        #                 price = market.c_quantize_order_price(self.trading_pair, price)
+        #                 size = Decimal(str(value[2]))
+        #                 size = market.c_quantize_order_amount(self.trading_pair, size)
+        #                 if size > 0 and price > 0:
+        #                     sells.append(PriceSize(price, size))
+        # else:
+        #     if not buy_reference_price.is_nan():
+        #         for level in range(0, self._buy_levels):
+        #             price = buy_reference_price * (Decimal("1") - self._bid_spread - (level * self._order_level_spread))
+        #             price = market.c_quantize_order_price(self.trading_pair, price)
+        #             size = self._order_amount + (self._order_level_amount * level)
+        #             size = market.c_quantize_order_amount(self.trading_pair, size)
+        #             if size > 0:
+        #                 buys.append(PriceSize(price, size))
+        #     if not sell_reference_price.is_nan():
+        #         for level in range(0, self._sell_levels):
+        #             price = sell_reference_price * (Decimal("1") + self._ask_spread + (level * self._order_level_spread))
+        #             price = market.c_quantize_order_price(self.trading_pair, price)
+        #             size = self._order_amount + (self._order_level_amount * level)
+        #             size = market.c_quantize_order_amount(self.trading_pair, size)
+        #             if size > 0:
+        #                 sells.append(PriceSize(price, size))
 
         return Proposal(buys, sells)
 
@@ -1034,13 +1050,15 @@ cdef class WashTradingStrategy(StrategyBase):
         size = Decimal(str(random.uniform(float(self._wash_trade_order_min_amount), float(self._wash_trade_order_max_amount))))
         size = market.c_quantize_order_amount(self.trading_pair, size)
 
+        wash_trade_spread = Decimal(str(random.uniform(float(self._wash_trade_min_spread), float(self._wash_trade_spread))))
+
         if not buy_reference_price.is_nan():
-            price = buy_reference_price * (Decimal("1") + self._wash_trade_spread)
+            price = buy_reference_price * (Decimal("1") + wash_trade_spread)
             price = market.c_quantize_order_price(self.trading_pair, price)
             if size > 0:
                 proposal.buys.append(PriceSize(price, size))
         if not sell_reference_price.is_nan():
-            price = sell_reference_price * (Decimal("1") - self._wash_trade_spread)
+            price = sell_reference_price * (Decimal("1") - wash_trade_spread)
             price = market.c_quantize_order_price(self.trading_pair, price)
             if size > 0:
                 proposal.sells.append(PriceSize(price, size))
@@ -1316,6 +1334,28 @@ cdef class WashTradingStrategy(StrategyBase):
         # Number of pair of orders to track for hanging orders
         number_of_pairs = min((len(proposal.buys), len(proposal.sells))) if self._hanging_orders_enabled else 0
 
+        if len(proposal.sells) > 0:
+            if self._logging_options & self.OPTION_LOG_CREATE_ORDER:
+                price_quote_str = [f"{sell.size.normalize()} {self.base_asset}, "
+                                   f"{sell.price.normalize()} {self.quote_asset}"
+                                   for sell in proposal.sells]
+                self.logger().info(
+                    f"({self.trading_pair}) Creating {len(proposal.sells)} ask "
+                    f"orders at (Size, Price): {price_quote_str}"
+                )
+            for idx, sell in enumerate(proposal.sells):
+                ask_order_id = self.c_sell_with_specific_market(
+                    self._market_info,
+                    sell.size,
+                    order_type=self._limit_order_type,
+                    price=sell.price,
+                    expiration_seconds=expiration_seconds
+                )
+                orders_created = True
+                if idx < number_of_pairs:
+                    order = next((o for o in self.active_orders if o.client_order_id == ask_order_id))
+                    if order:
+                        self._hanging_orders_tracker.current_created_pairs_of_orders[idx].sell_order = order
         if len(proposal.buys) > 0:
             if self._logging_options & self.OPTION_LOG_CREATE_ORDER:
                 price_quote_str = [f"{buy.size.normalize()} {self.base_asset}, "
@@ -1339,33 +1379,11 @@ cdef class WashTradingStrategy(StrategyBase):
                     if order:
                         self._hanging_orders_tracker.add_current_pairs_of_proposal_orders_executed_by_strategy(
                             CreatedPairOfOrders(order, None))
-        if len(proposal.sells) > 0:
-            if self._logging_options & self.OPTION_LOG_CREATE_ORDER:
-                price_quote_str = [f"{sell.size.normalize()} {self.base_asset}, "
-                                   f"{sell.price.normalize()} {self.quote_asset}"
-                                   for sell in proposal.sells]
-                self.logger().info(
-                    f"({self.trading_pair}) Creating {len(proposal.sells)} ask "
-                    f"orders at (Size, Price): {price_quote_str}"
-                )
-            for idx, sell in enumerate(proposal.sells):
-                ask_order_id = self.c_sell_with_specific_market(
-                    self._market_info,
-                    sell.size,
-                    order_type=self._limit_order_type,
-                    price=sell.price,
-                    expiration_seconds=expiration_seconds
-                )
-                orders_created = True
-                if idx < number_of_pairs:
-                    order = next((o for o in self.active_orders if o.client_order_id == ask_order_id))
-                    if order:
-                        self._hanging_orders_tracker.current_created_pairs_of_orders[idx].sell_order = order
         if orders_created:
             self.set_timers()
 
     cdef set_timers(self):
-        cdef double next_cycle = self._current_timestamp + self._order_refresh_time
+        cdef double next_cycle = self._current_timestamp + random.uniform(self._order_min_refresh_time, self._order_refresh_time)
         if self._create_timestamp <= self._current_timestamp:
             self._create_timestamp = next_cycle
         if self._cancel_timestamp <= self._current_timestamp:

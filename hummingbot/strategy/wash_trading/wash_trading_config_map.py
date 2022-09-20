@@ -135,19 +135,21 @@ wash_trading_config_map = {
                   prompt_on_new=True),
     "bid_spread":
         ConfigVar(key="bid_spread",
-                  prompt="How far away from the mid price do you want to place the "
+                  prompt="Maximum of how far away from the mid price do you want to place the "
                          "first bid order? (Enter 1 to indicate 1%) >>> ",
+                  required_if=lambda: False,
                   type_str="decimal",
                   default=Decimal("0"),
-                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=False),
+                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=True),
                   prompt_on_new=False),
     "ask_spread":
         ConfigVar(key="ask_spread",
-                  prompt="How far away from the mid price do you want to place the "
+                  prompt="Maximum of how far away from the mid price do you want to place the "
                          "first ask order? (Enter 1 to indicate 1%) >>> ",
+                  required_if=lambda: False,
                   type_str="decimal",
                   default=Decimal("0"),
-                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=False),
+                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=True),
                   prompt_on_new=False),
     "minimum_spread":
         ConfigVar(key="minimum_spread",
@@ -158,7 +160,14 @@ wash_trading_config_map = {
                   validator=lambda v: validate_decimal(v, -100, 100, True)),
     "order_refresh_time":
         ConfigVar(key="order_refresh_time",
-                  prompt="How often do you want to cancel and replace bids and asks "
+                  prompt="Maximum of how often do you want to cancel and replace bids and asks "
+                         "(in seconds)? >>> ",
+                  type_str="float",
+                  validator=lambda v: validate_decimal(v, 0, inclusive=False),
+                  prompt_on_new=True),
+    "order_min_refresh_time":
+        ConfigVar(key="order_min_refresh_time",
+                  prompt="Minimum of how often do you want to cancel and replace bids and asks "
                          "(in seconds)? >>> ",
                   type_str="float",
                   validator=lambda v: validate_decimal(v, 0, inclusive=False),
@@ -180,9 +189,10 @@ wash_trading_config_map = {
     "order_amount":
         ConfigVar(key="order_amount",
                   prompt=order_amount_prompt,
+                  required_if=lambda: False,
                   type_str="decimal",
                   default=Decimal("0"),
-                  validator=lambda v: validate_decimal(v, min_value=Decimal("0"), inclusive=False),
+                  validator=lambda v: validate_decimal(v, min_value=Decimal("0"), inclusive=True),
                   prompt_on_new=False),
     "price_ceiling":
         ConfigVar(key="price_ceiling",
@@ -467,24 +477,33 @@ wash_trading_config_map = {
     #                   "wash_trade_enabled").value),
     "wash_trade_spread":
         ConfigVar(key="wash_trade_spread",
-                  prompt="How far away from the mid price do you want to wash trade the "
+                  prompt="Maximum of how far away from the mid price do you want to wash trade the "
                          "first bid/ask order? (Enter 1 to indicate 1%) >>> ",
                   required_if=lambda: wash_trading_config_map.get(
                       "wash_trade_enabled").value,
                   type_str="decimal",
                   validator=lambda v: validate_decimal(v, 0, 100, inclusive=True),
                   prompt_on_new=True),
-    "wash_trade_order_min_amount":
-        ConfigVar(key="wash_trade_order_min_amount",
-                  prompt="What is the minimal amount of wash trade each time? >>> ",
+    "wash_trade_min_spread":
+        ConfigVar(key="wash_trade_min_spread",
+                  prompt="Minimum of how far away from the mid price do you want to wash trade the "
+                         "first bid/ask order? (Enter 1 to indicate 1%) >>> ",
+                  required_if=lambda: wash_trading_config_map.get(
+                      "wash_trade_enabled").value,
+                  type_str="decimal",
+                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=True),
+                  prompt_on_new=True),
+    "wash_trade_order_max_amount":
+        ConfigVar(key="wash_trade_order_max_amount",
+                  prompt="What is the maximal amount of wash trade each time? >>> ",
                   required_if=lambda: wash_trading_config_map.get(
                       "wash_trade_enabled").value,
                   type_str="decimal",
                   validator=lambda v: validate_decimal(v, min_value=Decimal("0"), inclusive=False),
                   prompt_on_new=True),
-    "wash_trade_order_max_amount":
-        ConfigVar(key="wash_trade_order_max_amount",
-                  prompt="What is the maximal amount of wash trade each time? >>> ",
+    "wash_trade_order_min_amount":
+        ConfigVar(key="wash_trade_order_min_amount",
+                  prompt="What is the minimal amount of wash trade each time? >>> ",
                   required_if=lambda: wash_trading_config_map.get(
                       "wash_trade_enabled").value,
                   type_str="decimal",
