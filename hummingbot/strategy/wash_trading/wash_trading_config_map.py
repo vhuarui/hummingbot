@@ -135,7 +135,7 @@ wash_trading_config_map = {
                   prompt_on_new=True),
     "bid_spread":
         ConfigVar(key="bid_spread",
-                  prompt="Maximum of how far away from the mid price do you want to place the "
+                  prompt="How far away from the mid price do you want to place the "
                          "first bid order? (Enter 1 to indicate 1%) >>> ",
                   required_if=lambda: False,
                   type_str="decimal",
@@ -144,7 +144,7 @@ wash_trading_config_map = {
                   prompt_on_new=False),
     "ask_spread":
         ConfigVar(key="ask_spread",
-                  prompt="Maximum of how far away from the mid price do you want to place the "
+                  prompt="How far away from the mid price do you want to place the "
                          "first ask order? (Enter 1 to indicate 1%) >>> ",
                   required_if=lambda: False,
                   type_str="decimal",
@@ -160,14 +160,7 @@ wash_trading_config_map = {
                   validator=lambda v: validate_decimal(v, -100, 100, True)),
     "order_refresh_time":
         ConfigVar(key="order_refresh_time",
-                  prompt="Maximum of how often do you want to cancel and replace bids and asks "
-                         "(in seconds)? >>> ",
-                  type_str="float",
-                  validator=lambda v: validate_decimal(v, 0, inclusive=False),
-                  prompt_on_new=True),
-    "order_min_refresh_time":
-        ConfigVar(key="order_min_refresh_time",
-                  prompt="Minimum of how often do you want to cancel and replace bids and asks "
+                  prompt="How often do you want to cancel and replace bids and asks "
                          "(in seconds)? >>> ",
                   type_str="float",
                   validator=lambda v: validate_decimal(v, 0, inclusive=False),
@@ -295,11 +288,20 @@ wash_trading_config_map = {
                   ),
     "filled_order_delay":
         ConfigVar(key="filled_order_delay",
-                  prompt="How long do you want to wait before placing the next order "
+                  prompt="Maximum of how long do you want to wait before placing the next order "
                          "if your order gets filled (in seconds)? >>> ",
                   type_str="float",
                   validator=lambda v: validate_decimal(v, min_value=0, inclusive=False),
-                  default=60),
+                  default=60,
+                  prompt_on_new=True),
+    "filled_order_delay_min":
+        ConfigVar(key="filled_order_delay_min",
+                  prompt="Minimum of how long do you want to wait before placing the next order "
+                         "if your order gets filled (in seconds)? >>> ",
+                  type_str="float",
+                  validator=lambda v: validate_decimal(v, min_value=0, inclusive=False),
+                  default=60,
+                  prompt_on_new=True),
     "hanging_orders_enabled":
         ConfigVar(key="hanging_orders_enabled",
                   prompt="Do you want to enable hanging orders? (Yes/No) >>> ",

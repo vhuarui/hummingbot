@@ -22,10 +22,10 @@ cdef class WashTradingStrategy(StrategyBase):
         object _order_level_spread
         object _order_level_amount
         double _order_refresh_time
-        double _order_min_refresh_time
         double _max_order_age
         object _order_refresh_tolerance_pct
         double _filled_order_delay
+        double _filled_order_delay_min
         bint _inventory_skew_enabled
         object _inventory_target_base_pct
         object _inventory_range_multiplier

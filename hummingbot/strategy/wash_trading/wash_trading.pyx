@@ -58,10 +58,10 @@ cdef class WashTradingStrategy(StrategyBase):
                     order_level_spread: Decimal = s_decimal_zero,
                     order_level_amount: Decimal = s_decimal_zero,
                     order_refresh_time: float = 30.0,
-                    order_min_refresh_time: float = 30.0,
                     max_order_age: float = 1800.0,
                     order_refresh_tolerance_pct: Decimal = s_decimal_neg_one,
                     filled_order_delay: float = 60.0,
+                    filled_order_delay_min: float = 60.0,
                     inventory_skew_enabled: bool = False,
                     inventory_target_base_pct: Decimal = s_decimal_zero,
                     inventory_range_multiplier: Decimal = s_decimal_zero,
@@ -113,10 +113,10 @@ cdef class WashTradingStrategy(StrategyBase):
         self._order_level_spread = order_level_spread
         self._order_level_amount = order_level_amount
         self._order_refresh_time = order_refresh_time
-        self._order_min_refresh_time = order_min_refresh_time
         self._max_order_age = max_order_age
         self._order_refresh_tolerance_pct = order_refresh_tolerance_pct
         self._filled_order_delay = filled_order_delay
+        self._filled_order_delay_min = filled_order_delay_min
         self._inventory_skew_enabled = inventory_skew_enabled
         self._inventory_target_base_pct = inventory_target_base_pct
         self._inventory_range_multiplier = inventory_range_multiplier
@@ -323,14 +323,6 @@ cdef class WashTradingStrategy(StrategyBase):
         self._order_refresh_time = value
 
     @property
-    def order_min_refresh_time(self) -> float:
-        return self._order_min_refresh_time
-
-    @order_min_refresh_time.setter
-    def order_min_refresh_time(self, value: float):
-        self._order_min_refresh_time = value
-
-    @property
     def filled_order_delay(self) -> float:
         return self._filled_order_delay
 
@@ -339,12 +331,12 @@ cdef class WashTradingStrategy(StrategyBase):
         self._filled_order_delay = value
 
     @property
-    def filled_order_delay(self) -> float:
-        return self._filled_order_delay
+    def filled_order_delay_min(self) -> float:
+        return self._filled_order_delay_min
 
-    @filled_order_delay.setter
-    def filled_order_delay(self, value: float):
-        self._filled_order_delay = value
+    @filled_order_delay_min.setter
+    def filled_order_delay_min(self, value: float):
+        self._filled_order_delay_min = value
 
     @property
     def add_transaction_costs_to_orders(self) -> bool:
@@ -1188,7 +1180,7 @@ cdef class WashTradingStrategy(StrategyBase):
                 return
 
         # delay order creation by filled_order_dalay (in seconds)
-        self._create_timestamp = self._current_timestamp + self._filled_order_delay
+        self._create_timestamp = self._current_timestamp + random.uniform(self._filled_order_delay_min, self._filled_order_delay)
         self._cancel_timestamp = min(self._cancel_timestamp, self._create_timestamp)
 
         self._filled_buys_balance += 1
@@ -1228,7 +1220,7 @@ cdef class WashTradingStrategy(StrategyBase):
                 return
 
         # delay order creation by filled_order_dalay (in seconds)
-        self._create_timestamp = self._current_timestamp + self._filled_order_delay
+        self._create_timestamp = self._current_timestamp + random.uniform(self._filled_order_delay_min, self._filled_order_delay)
         self._cancel_timestamp = min(self._cancel_timestamp, self._create_timestamp)
 
         self._filled_sells_balance += 1
@@ -1383,7 +1375,7 @@ cdef class WashTradingStrategy(StrategyBase):
             self.set_timers()
 
     cdef set_timers(self):
-        cdef double next_cycle = self._current_timestamp + random.uniform(self._order_min_refresh_time, self._order_refresh_time)
+        cdef double next_cycle = self._current_timestamp + self._order_refresh_time
         if self._create_timestamp <= self._current_timestamp:
             self._create_timestamp = next_cycle
         if self._cancel_timestamp <= self._current_timestamp:
