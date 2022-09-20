@@ -22,6 +22,7 @@ cdef class WashTradingStrategy(StrategyBase):
         object _order_level_spread
         object _order_level_amount
         double _order_refresh_time
+        double _order_min_refresh_time
         double _max_order_age
         object _order_refresh_tolerance_pct
         double _filled_order_delay
@@ -61,6 +62,7 @@ cdef class WashTradingStrategy(StrategyBase):
 
         bint _wash_trade_enabled
         object _wash_trade_spread
+        object _wash_trade_min_spread
         object _wash_trade_order_min_amount
         object _wash_trade_order_max_amount
 

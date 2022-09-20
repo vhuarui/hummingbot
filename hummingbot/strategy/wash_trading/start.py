@@ -23,6 +23,8 @@ def start(self):
     try:
         order_amount = c_map.get("order_amount").value
         order_refresh_time = c_map.get("order_refresh_time").value
+        order_min_refresh_time = order_refresh_time if c_map.get("order_min_refresh_time").value is None else \
+            c_map.get("order_min_refresh_time").value
         max_order_age = c_map.get("max_order_age").value
         bid_spread = c_map.get("bid_spread").value / Decimal('100')
         ask_spread = c_map.get("ask_spread").value / Decimal('100')
@@ -104,6 +106,8 @@ def start(self):
         wash_trade_enabled = c_map.get("wash_trade_enabled").value
         # wash_trade_refresh_time = c_map.get("wash_trade_refresh_time").value
         wash_trade_spread = c_map.get("wash_trade_spread").value / Decimal('100')
+        wash_trade_min_spread = wash_trade_spread if c_map.get("wash_trade_min_spread").value is None else \
+            c_map.get("wash_trade_min_spread").value / Decimal('100')
         wash_trade_order_min_amount = c_map.get("wash_trade_order_min_amount").value
         wash_trade_order_max_amount = c_map.get("wash_trade_order_max_amount").value
 
@@ -123,6 +127,7 @@ def start(self):
             filled_order_delay=filled_order_delay,
             hanging_orders_enabled=hanging_orders_enabled,
             order_refresh_time=order_refresh_time,
+            order_min_refresh_time=order_min_refresh_time,
             max_order_age=max_order_age,
             order_optimization_enabled=order_optimization_enabled,
             ask_order_optimization_depth=ask_order_optimization_depth,
@@ -149,6 +154,7 @@ def start(self):
             wash_trade_enabled=wash_trade_enabled,
             # wash_trade_refresh_time=wash_trade_refresh_time,
             wash_trade_spread=wash_trade_spread,
+            wash_trade_min_spread=wash_trade_min_spread,
             wash_trade_order_min_amount=wash_trade_order_min_amount,
             wash_trade_order_max_amount=wash_trade_order_max_amount
         )
