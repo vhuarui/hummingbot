@@ -148,6 +148,7 @@ ask_order_level_amounts: null
 should_wait_order_cancel_confirmation: True
 
 wash_trade_enabled: true
+wash_trade_sell_first: true
 wash_trade_spread:
 wash_trade_min_spread:
 wash_trade_order_max_amount:

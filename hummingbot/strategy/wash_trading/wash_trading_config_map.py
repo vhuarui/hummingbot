@@ -467,16 +467,13 @@ wash_trading_config_map = {
                   default=True,
                   validator=validate_bool,
                   prompt_on_new=False),
-    # "wash_trade_refresh_time":
-    #     ConfigVar(key="wash_trade_refresh_time",
-    #               prompt="How often do you want to wash trade the best bids and asks "
-    #                      "(in seconds)? >>> ",
-    #               required_if=lambda: wash_trading_config_map.get(
-    #                   "wash_trade_enabled").value,
-    #               type_str="float",
-    #               validator=lambda v: validate_decimal(v, 0, inclusive=False),
-    #               prompt_on_new=lambda: wash_trading_config_map.get(
-    #                   "wash_trade_enabled").value),
+    "wash_trade_sell_first":
+        ConfigVar(key="wash_trade_sell_first",
+                  prompt="Would you like to execute sell orders first? (Yes/No) >>> ",
+                  type_str="bool",
+                  default=True,
+                  validator=validate_bool,
+                  prompt_on_new=False),
     "wash_trade_spread":
         ConfigVar(key="wash_trade_spread",
                   prompt="Maximum of how far away from the mid price do you want to wash trade the "
