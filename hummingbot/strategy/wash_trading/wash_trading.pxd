@@ -61,6 +61,7 @@ cdef class WashTradingStrategy(StrategyBase):
         object _moving_price_band
 
         bint _wash_trade_enabled
+        bint _wash_trade_sell_first
         object _wash_trade_spread
         object _wash_trade_min_spread
         object _wash_trade_order_min_amount

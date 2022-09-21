@@ -104,7 +104,7 @@ def start(self):
         should_wait_order_cancel_confirmation = c_map.get("should_wait_order_cancel_confirmation")
 
         wash_trade_enabled = c_map.get("wash_trade_enabled").value
-        # wash_trade_refresh_time = c_map.get("wash_trade_refresh_time").value
+        wash_trade_sell_first = c_map.get("wash_trade_sell_first").value
         wash_trade_spread = c_map.get("wash_trade_spread").value / Decimal('100')
         wash_trade_min_spread = wash_trade_spread if c_map.get("wash_trade_min_spread").value is None else \
             c_map.get("wash_trade_min_spread").value / Decimal('100')
@@ -152,7 +152,7 @@ def start(self):
             should_wait_order_cancel_confirmation=should_wait_order_cancel_confirmation,
             moving_price_band=moving_price_band,
             wash_trade_enabled=wash_trade_enabled,
-            # wash_trade_refresh_time=wash_trade_refresh_time,
+            wash_trade_sell_first=wash_trade_sell_first,
             wash_trade_spread=wash_trade_spread,
             wash_trade_min_spread=wash_trade_min_spread,
             wash_trade_order_min_amount=wash_trade_order_min_amount,
